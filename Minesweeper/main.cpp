@@ -106,8 +106,11 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
 
         if (e.type == SDL_KEYDOWN)
         {
-            game_over = false;
-            createGrid(n, m, k, grid, sgrid);
+            if (e.key.keysym.scancode == SDL_SCANCODE_SPACE)
+            {
+                game_over = false;
+                createGrid(n, m, k, grid, sgrid);
+            }
         }
 
         if (e.type == SDL_MOUSEBUTTONUP)
