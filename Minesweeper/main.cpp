@@ -3,27 +3,33 @@
 #include <cstdlib>
 #include <ctime>
 
+struct SettingGrid
+{
+    int n, m;           // field sizes
+    int number_of_mines;
+    const int square_size = 32;
+};
+
 void open(const int& x, const int& y, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid);
 void openEmpty(const int& x, const int& y, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid);
 
-void createGrid(const int& n, const int& m, const int& k,
-    std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid)
+void createGrid(const SettingGrid& setting, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid)
 {
-    for (int i = 1; i <= n; ++i)
+    for (int i = 1; i <= setting.n; ++i)
     {
-        for (int j = 1; j <= m; ++j)
+        for (int j = 1; j <= setting.m; ++j)
         {
             sgrid[i][j] = 10;
             grid[i][j] = 0;
         }
     }
 
-    int count = k;
+    int count = setting.number_of_mines;
 
     while (count > 0)
     {
-        int x = rand() % n + 1;
-        int y = rand() % m + 1;
+        int x = rand() % setting.n + 1;
+        int y = rand() % setting.m + 1;
 
         if (grid[x][y] == 0)
         {
@@ -33,9 +39,9 @@ void createGrid(const int& n, const int& m, const int& k,
     }
 
 #ifndef NDEBUG
-    for (int i = 1; i <= n; ++i)
+    for (int i = 1; i <= setting.n; ++i)
     {
-        for (int j = 1; j <= m; ++j)
+        for (int j = 1; j <= setting.m; ++j)
         {
             std::cout << grid[i][j] << " ";
         }
@@ -46,9 +52,9 @@ void createGrid(const int& n, const int& m, const int& k,
     std::cout << std::endl;
 #endif // !NDEBUG
 
-    for (int i = 1; i <= n; ++i)
+    for (int i = 1; i <= setting.n; ++i)
     {
-        for (int j = 1; j <= m; ++j)
+        for (int j = 1; j <= setting.m; ++j)
         {
             if (grid[i][j] == 9)            continue;
             if (grid[i + 1][j + 1] == 9)    grid[i][j]++;
@@ -63,9 +69,9 @@ void createGrid(const int& n, const int& m, const int& k,
     }
 
 #ifndef NDEBUG
-    for (int i = 1; i <= n; ++i)
+    for (int i = 1; i <= setting.n; ++i)
     {
-        for (int j = 1; j <= m; ++j)
+        for (int j = 1; j <= setting.m; ++j)
         {
             std::cout << grid[i][j] << " ";
         }
@@ -76,10 +82,14 @@ void createGrid(const int& n, const int& m, const int& k,
 
 void openEmpty(const int& x, const int& y, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid)
 {
-    open(x - 1, y, grid, sgrid);
     open(x, y + 1, grid, sgrid);
-    open(x + 1, y, grid, sgrid);
+    open(x - 1, y + 1, grid, sgrid);
+    open(x - 1, y, grid, sgrid);
+    open(x - 1, y - 1, grid, sgrid);
     open(x, y - 1, grid, sgrid);
+    open(x + 1, y - 1, grid, sgrid);
+    open(x + 1, y, grid, sgrid);
+    open(x + 1, y + 1, grid, sgrid);
 }
 
 void open(const int& x, const int& y, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid)
@@ -94,8 +104,8 @@ void open(const int& x, const int& y, std::vector<std::vector<int>>& grid, std::
     }
 }
 
-void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<int>>& grid,
-    std::vector<std::vector<int>>& sgrid, const int& n, const int& m, const int& k, const int& w)
+void events(SDL_Event& e, bool& run, int& state_game, std::vector<std::vector<int>>& grid,
+    std::vector<std::vector<int>>& sgrid, const SettingGrid& setting)
 {
     while (SDL_PollEvent(&e))
     {
@@ -108,8 +118,8 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
         {
             if (e.key.keysym.scancode == SDL_SCANCODE_SPACE)
             {
-                game_over = false;
-                createGrid(n, m, k, grid, sgrid);
+                state_game = 0;
+                createGrid(setting, grid, sgrid);
             }
         }
 
@@ -117,18 +127,15 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
         {
             if (e.button.button == SDL_BUTTON_LEFT)
             {
-                int x = e.motion.x / w;
-                int y = e.motion.y / w;
-#ifndef NDEBUG
-                std::cout << "X: " << x << std::endl;
-                std::cout << "Y: " << y << std::endl;
-#endif // !NDEBUG
-                if (x > 0 && x <= n && y > 0 && y <= m)
+                int x = e.motion.x / setting.square_size;
+                int y = e.motion.y / setting.square_size;
+
+                if (x > 0 && x <= setting.n && y > 0 && y <= setting.m)
                 {
                     sgrid[x][y] = grid[x][y];
                     if (sgrid[x][y] == 9)
                     {
-                        game_over = true;
+                        state_game = -1;
                     }
                     if (sgrid[x][y] == 0)
                     {
@@ -138,13 +145,10 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
             }
             if (e.button.button == SDL_BUTTON_RIGHT)
             {
-                int x = e.motion.x / w;
-                int y = e.motion.y / w;
-#ifndef NDEBUG
-                std::cout << "X: " << x << std::endl;
-                std::cout << "Y: " << y << std::endl;
-#endif // !NDEBUG
-                if (x > 0 && x <= n && y > 0 && y <= m)
+                int x = e.motion.x / setting.square_size;
+                int y = e.motion.y / setting.square_size;
+
+                if (x > 0 && x <= setting.n && y > 0 && y <= setting.m)
                 {
                     switch (sgrid[x][y])
                     {
@@ -163,32 +167,33 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
     }
 }
 
-void gameLoop(Manager* manager, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid,
-    const int& n, const int& m, const int& k, const int& w)
+void gameLoop(Manager* manager, std::vector<std::vector<int>>& grid, 
+    std::vector<std::vector<int>>& sgrid, const SettingGrid& setting)
 {
     Sprite* tiles = new Sprite("images/tiles.bmp", manager);
 
     SDL_Event e;
     bool run = true;
-    bool game_over = false;
+    int stateGame = 0;     // 0 - active game, 1 win, -1 game over
+   // bool game_over = false;
     while (run)
     {
         // Обработка событий
-        events(e, run, game_over, grid, sgrid, n, m, k, w);
+        events(e, run, stateGame, grid, sgrid, setting);
 
         // Отображение сцены
         manager->clear();
 
-        for (int i = 1; i <= n; ++i)
+        for (int i = 1; i <= setting.n; ++i)
         {
-            for (int j = 1; j <= m; ++j)
+            for (int j = 1; j <= setting.m; ++j)
             {
-                if (game_over)
+                if (stateGame == -1)
                 {
                     sgrid[i][j] = grid[i][j];
                 }
-                tiles->setRect(w * sgrid[i][j], 0, w, w);
-                tiles->draw(i * w, j * w);
+                tiles->setRect(setting.square_size * sgrid[i][j], 0, setting.square_size, setting.square_size);
+                tiles->draw(i * setting.square_size, j * setting.square_size);
             }
         }
 
@@ -198,18 +203,16 @@ void gameLoop(Manager* manager, std::vector<std::vector<int>>& grid, std::vector
 
 int main(int argc, char** args)
 {
-    int n = 10, m = 10;   // размеры поля
-    int k = 10;           // количество мин
-    const int w = 32;     // размер одного квадрата
-    std::vector<std::vector<int>> grid(n + 2, std::vector<int>(m + 2, -1));      // настоящее поле
-    std::vector<std::vector<int>> sgrid(n + 2, std::vector<int>(m + 2));        // видимая часть для игрока
+    SettingGrid setting{ 10, 10, 10 };
+    std::vector<std::vector<int>> grid(setting.n + 2, std::vector<int>(setting.m + 2, -1));      // настоящее поле
+    std::vector<std::vector<int>> sgrid(setting.n + 2, std::vector<int>(setting.m + 2));        // видимая часть для игрока
 
-    Manager* manager = new Manager(n, m, w);
+    Manager* manager = new Manager(setting.n, setting.m, setting.square_size);
 
     srand(static_cast<unsigned int>(time(0))); // устанавливаем значение системных часов в качестве стартового числа
 
-    createGrid(n, m, k, grid, sgrid);
-    gameLoop(manager, grid, sgrid, n, m, k, w);
+    createGrid(setting, grid, sgrid);
+    gameLoop(manager, grid, sgrid, setting);
 
     return 0;
 }
