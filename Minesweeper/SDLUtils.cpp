@@ -29,13 +29,19 @@ int init(SDL_Window*& window, SDL_Renderer*& renderer, const int& width, const i
         return 3;
     }
 
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
     return 0;
 }
 
 SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren)
 {
-    SDL_Texture* texture = IMG_LoadTexture(ren, file.c_str());
-    return texture;
+    SDL_Surface* loaded_image = SDL_LoadBMP(file.c_str());
+    if (loaded_image != nullptr)
+    {
+        return SDL_CreateTextureFromSurface(ren, loaded_image);
+    }
+    return nullptr;
 }
 
 Sprite::Sprite(const std::string& path, Manager*& manager)
@@ -46,7 +52,7 @@ Sprite::Sprite(const std::string& path, Manager*& manager)
     if (texture == nullptr)
     {
 #ifndef NDEBUG
-        std::cout << IMG_GetError();
+        std::cout << SDL_GetError();
 #endif
         delete manager;
         exit(1);
@@ -114,7 +120,6 @@ Manager::~Manager()
     }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    IMG_Quit();
     SDL_Quit();
 }
 

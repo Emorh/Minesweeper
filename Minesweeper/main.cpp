@@ -166,8 +166,7 @@ void events(SDL_Event& e, bool& run, bool& game_over, std::vector<std::vector<in
 void gameLoop(Manager* manager, std::vector<std::vector<int>>& grid, std::vector<std::vector<int>>& sgrid,
     const int& n, const int& m, const int& k, const int& w)
 {
-    Sprite* background = new Sprite("images/background.jpg", manager);
-    Sprite* tiles = new Sprite("images/tiles.jpg", manager);
+    Sprite* tiles = new Sprite("images/tiles.bmp", manager);
 
     SDL_Event e;
     bool run = true;
@@ -179,7 +178,6 @@ void gameLoop(Manager* manager, std::vector<std::vector<int>>& grid, std::vector
 
         // Отображение сцены
         manager->clear();
-        background->draw(0, 0);
 
         for (int i = 1; i <= n; ++i)
         {
